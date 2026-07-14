@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background: radial-gradient(ellipse at top, #171F36 0%, #0B0F1A 55%);
+}
+
+::selection {
+  background: #FF6B5B55;
+}
