@@ -15,7 +15,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata = {
-  title: "Live Connection",
+  title: "Listen",
   description: "Se comprendre sans parler, juste en partageant une chanson.",
 };
 

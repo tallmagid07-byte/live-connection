@@ -27,7 +27,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      <p className="uppercase tracking-[0.3em] text-xs text-muted mb-4">Live Connection</p>
+      <p className="uppercase tracking-[0.3em] text-xs text-muted mb-4">Listen</p>
       <h1 className="font-display italic text-4xl md:text-5xl leading-tight max-w-xl">
         Se comprendre <span className="not-italic text-coral">sans parler</span>,
         juste en partageant une chanson.

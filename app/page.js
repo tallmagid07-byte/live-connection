@@ -18,7 +18,7 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen flex flex-col items-center px-6 py-12">
       <header className="w-full max-w-xl flex items-center justify-between mb-10">
-        <p className="font-display italic text-xl">Live Connection</p>
+        <p className="font-display italic text-xl">Listen</p>
         <a href="/profile" className="text-sm text-muted hover:text-ink transition">
           Mon profil
         </a>
