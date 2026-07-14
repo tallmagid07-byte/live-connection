@@ -8,6 +8,7 @@ export default function ProfilePage() {
   const supabase = createClient();
   const router = useRouter();
   const [profile, setProfile] = useState(null);
+  const [username, setUsername] = useState("");
   const [city, setCity] = useState("");
   const [saved, setSaved] = useState(false);
 
@@ -26,13 +27,14 @@ export default function ProfilePage() {
         .eq("id", user.id)
         .single();
       setProfile(data);
+      setUsername(data?.username || "");
       setCity(data?.city || "");
     }
     load();
   }, [supabase, router]);
 
   async function handleSave() {
-    await supabase.from("profiles").update({ city }).eq("id", profile.id);
+    await supabase.from("profiles").update({ username, city }).eq("id", profile.id);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
@@ -51,17 +53,17 @@ export default function ProfilePage() {
       <div className="w-full max-w-md">
         <a href="/" className="text-sm text-muted hover:text-ink transition">← Retour au feed</a>
 
-        <div className="flex items-center gap-4 mt-8 mb-10">
-          <img
-            src={profile.avatar_url || "/default-avatar.png"}
-            alt=""
-            className="w-16 h-16 rounded-full object-cover border border-line"
-          />
-          <div>
-            <p className="font-display italic text-2xl">{profile.username}</p>
-            <p className="text-xs text-muted">Compte connecté via Spotify</p>
-          </div>
-        </div>
+        <p className="font-display italic text-2xl mt-8 mb-10">Mon profil</p>
+
+        <label className="block text-xs uppercase tracking-widest text-muted mb-2">
+          Nom affiché
+        </label>
+        <input
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          placeholder="Votre prénom ou pseudo"
+          className="w-full bg-surface border border-line rounded-xl px-4 py-3 text-ink placeholder:text-muted/60 focus:outline-none focus:border-coral/60 mb-6"
+        />
 
         <label className="block text-xs uppercase tracking-widest text-muted mb-2">
           Ville ou quartier
