@@ -52,8 +52,8 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-      <div className="mb-8">
-        <img src="/logo.svg" alt="Listen" className="h-14 mx-auto" />
+      <div className="mb-10">
+        <img src="/logo.svg" alt="Listen" className="h-24 mx-auto" />
       </div>
 
       <h1 className="font-display italic text-4xl md:text-5xl leading-tight max-w-xl">
