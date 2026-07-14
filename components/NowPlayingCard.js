@@ -36,7 +36,12 @@ export default function NowPlayingCard({ profile, track, friendStatus, onAddFrie
       {showFriendAction && (
         <div className="shrink-0">
           {friendStatus === "accepted" && (
-            <span className="text-xs text-periwinkle whitespace-nowrap">Amis ✓</span>
+            <a
+              href={`/messages/${profile?.id}`}
+              className="text-xs bg-periwinkle text-night font-medium px-3 py-2 rounded-full hover:brightness-110 transition whitespace-nowrap"
+            >
+              Message
+            </a>
           )}
           {friendStatus === "pending_sent" && (
             <span className="text-xs text-muted whitespace-nowrap">Demande envoyée</span>

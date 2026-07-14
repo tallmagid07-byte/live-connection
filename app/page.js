@@ -24,9 +24,14 @@ export default async function HomePage() {
     <main className="min-h-screen flex flex-col items-center px-6 py-12">
       <header className="w-full max-w-xl flex items-center justify-between mb-10">
         <img src="/logo.svg" alt="Listen" className="h-12" />
-        <a href="/profile" className="text-sm text-muted hover:text-ink transition">
-          Mon profil
-        </a>
+        <div className="flex items-center gap-5">
+          <a href="/friends" className="text-sm text-muted hover:text-ink transition">
+            Mes amis
+          </a>
+          <a href="/profile" className="text-sm text-muted hover:text-ink transition">
+            Mon profil
+          </a>
+        </div>
       </header>
 
       <LiveFeed
