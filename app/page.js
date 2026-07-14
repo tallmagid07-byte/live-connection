@@ -15,6 +15,11 @@ export default async function HomePage() {
     .select("*, profiles(*)")
     .order("updated_at", { ascending: false });
 
+  const { data: friendships } = await supabase
+    .from("friendships")
+    .select("*, requester:profiles!friendships_requester_id_fkey(*), addressee:profiles!friendships_addressee_id_fkey(*)")
+    .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
+
   return (
     <main className="min-h-screen flex flex-col items-center px-6 py-12">
       <header className="w-full max-w-xl flex items-center justify-between mb-10">
@@ -24,11 +29,11 @@ export default async function HomePage() {
         </a>
       </header>
 
-      <p className="text-xs uppercase tracking-widest text-muted mb-6 self-start w-full max-w-xl">
-        En ce moment
-      </p>
-
-      <LiveFeed initialEntries={entries || []} currentUserId={user.id} />
+      <LiveFeed
+        initialEntries={entries || []}
+        initialFriendships={friendships || []}
+        currentUserId={user.id}
+      />
     </main>
   );
 }

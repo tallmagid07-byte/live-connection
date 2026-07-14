@@ -1,4 +1,4 @@
-export default function NowPlayingCard({ profile, track }) {
+export default function NowPlayingCard({ profile, track, friendStatus, onAddFriend, onAccept, showFriendAction = true }) {
   const initial = (profile?.username || "?").trim().charAt(0).toUpperCase();
 
   return (
@@ -32,6 +32,33 @@ export default function NowPlayingCard({ profile, track }) {
         <p className="text-sm text-ink/90 truncate mt-1">{track.track_name}</p>
         <p className="text-xs text-muted truncate">{track.artist_name}</p>
       </div>
+
+      {showFriendAction && (
+        <div className="shrink-0">
+          {friendStatus === "accepted" && (
+            <span className="text-xs text-periwinkle whitespace-nowrap">Amis ✓</span>
+          )}
+          {friendStatus === "pending_sent" && (
+            <span className="text-xs text-muted whitespace-nowrap">Demande envoyée</span>
+          )}
+          {friendStatus === "pending_received" && (
+            <button
+              onClick={onAccept}
+              className="text-xs bg-periwinkle text-night font-medium px-3 py-2 rounded-full hover:brightness-110 transition whitespace-nowrap"
+            >
+              Accepter
+            </button>
+          )}
+          {!friendStatus && (
+            <button
+              onClick={onAddFriend}
+              className="text-xs bg-surface2 border border-line px-3 py-2 rounded-full hover:border-coral/60 transition whitespace-nowrap"
+            >
+              + Ami
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
