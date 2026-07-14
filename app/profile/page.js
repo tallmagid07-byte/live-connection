@@ -11,6 +11,8 @@ export default function ProfilePage() {
   const [username, setUsername] = useState("");
   const [city, setCity] = useState("");
   const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   useEffect(() => {
     async function load() {
@@ -39,6 +41,35 @@ export default function ProfilePage() {
     setTimeout(() => setSaved(false), 2000);
   }
 
+  async function handlePhotoChange(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadError("");
+    setUploading(true);
+
+    const extension = file.name.split(".").pop();
+    const path = `${profile.id}/avatar.${extension}`;
+
+    const { error: uploadErr } = await supabase.storage
+      .from("avatars")
+      .upload(path, file, { upsert: true });
+
+    if (uploadErr) {
+      setUploadError("L'upload a échoué. Vérifiez que le bucket 'avatars' existe et est public.");
+      setUploading(false);
+      return;
+    }
+
+    const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
+    // on ajoute un paramètre pour forcer le rafraîchissement du cache d'image
+    const freshUrl = `${urlData.publicUrl}?t=${Date.now()}`;
+
+    await supabase.from("profiles").update({ avatar_url: freshUrl }).eq("id", profile.id);
+    setProfile((p) => ({ ...p, avatar_url: freshUrl }));
+    setUploading(false);
+  }
+
   async function handleLogout() {
     await supabase.auth.signOut();
     router.push("/login");
@@ -48,12 +79,36 @@ export default function ProfilePage() {
     return <main className="min-h-screen flex items-center justify-center text-muted">Chargement…</main>;
   }
 
+  const initial = (username || "?").trim().charAt(0).toUpperCase();
+
   return (
     <main className="min-h-screen flex flex-col items-center px-6 py-12">
       <div className="w-full max-w-md">
         <a href="/" className="text-sm text-muted hover:text-ink transition">← Retour au feed</a>
 
-        <p className="font-display italic text-2xl mt-8 mb-10">Mon profil</p>
+        <p className="font-display italic text-2xl mt-8 mb-8">Mon profil</p>
+
+        {/* Photo de profil */}
+        <div className="flex flex-col items-center mb-8">
+          <label className="relative cursor-pointer group">
+            {profile.avatar_url ? (
+              <img
+                src={profile.avatar_url}
+                alt=""
+                className="w-24 h-24 rounded-full object-cover border border-line"
+              />
+            ) : (
+              <div className="w-24 h-24 rounded-full bg-surface2 border border-line flex items-center justify-center font-display italic text-3xl">
+                {initial}
+              </div>
+            )}
+            <span className="absolute inset-0 rounded-full bg-night/60 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-xs">
+              {uploading ? "…" : "Changer"}
+            </span>
+            <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" disabled={uploading} />
+          </label>
+          {uploadError && <p className="text-xs text-coral mt-3 text-center">{uploadError}</p>}
+        </div>
 
         <label className="block text-xs uppercase tracking-widest text-muted mb-2">
           Nom affiché

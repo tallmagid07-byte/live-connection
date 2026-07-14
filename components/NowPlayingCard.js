@@ -5,19 +5,31 @@ export default function NowPlayingCard({ profile, track }) {
     <div className="flex items-center gap-4 bg-surface border border-line rounded-2xl p-4 hover:border-coral/40 transition">
       <div className="relative shrink-0">
         <span className="absolute inset-0 rounded-full border border-coral/60 animate-pulseRing" />
-        <div className="relative w-12 h-12 rounded-full bg-surface2 border border-line flex items-center justify-center font-display italic text-lg">
-          {initial}
-        </div>
+        {profile?.avatar_url ? (
+          <img
+            src={profile.avatar_url}
+            alt={profile.username}
+            className="relative w-12 h-12 rounded-full object-cover border border-line"
+          />
+        ) : (
+          <div className="relative w-12 h-12 rounded-full bg-surface2 border border-line flex items-center justify-center font-display italic text-lg">
+            {initial}
+          </div>
+        )}
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline gap-2">
-          <p className="font-medium truncate">{profile?.username || "Quelqu'un"}</p>
-          {profile?.city && (
-            <span className="text-xs text-muted shrink-0">· {profile.city}</span>
-          )}
-        </div>
-        <p className="text-sm text-ink/90 truncate">{track.track_name}</p>
+        <p className="font-medium truncate">{profile?.username || "Quelqu'un"}</p>
+        {profile?.city && (
+          <p className="flex items-center gap-1 text-xs text-muted truncate">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" className="shrink-0">
+              <path d="M12 22s7-7.16 7-12a7 7 0 10-14 0c0 4.84 7 12 7 12z" stroke="currentColor" strokeWidth="2"/>
+              <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="2"/>
+            </svg>
+            {profile.city}
+          </p>
+        )}
+        <p className="text-sm text-ink/90 truncate mt-1">{track.track_name}</p>
         <p className="text-xs text-muted truncate">{track.artist_name}</p>
       </div>
     </div>
