@@ -52,17 +52,10 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-6 text-center">
-      <div className="relative mb-10">
-        <span className="absolute inset-0 rounded-full border border-coral/50 animate-pulseRing" />
-        <span className="absolute inset-0 rounded-full border border-coral/30 animate-pulseRing [animation-delay:0.6s]" />
-        <div className="relative w-20 h-20 rounded-full bg-surface2 border border-line flex items-center justify-center">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-            <path d="M4 14v-4a8 8 0 0116 0v4M4 14a2 2 0 002 2h1v-6H6a2 2 0 00-2 2zM20 14a2 2 0 01-2 2h-1v-6h1a2 2 0 012 2z" stroke="#EDEAF6" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </div>
+      <div className="mb-8">
+        <img src="/logo.svg" alt="Listen" className="h-14 mx-auto" />
       </div>
 
-      <p className="uppercase tracking-[0.3em] text-xs text-muted mb-4">Listen</p>
       <h1 className="font-display italic text-4xl md:text-5xl leading-tight max-w-xl">
         Se comprendre <span className="not-italic text-coral">sans parler</span>,
         juste en partageant une chanson.
