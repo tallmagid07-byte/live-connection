@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import MusicSearch from "./MusicSearch";
 import YouTubePlayer from "./YouTubePlayer";
@@ -10,6 +10,13 @@ export default function FavoritesList({ userId, initialFavorites, editable = fal
   const [favorites, setFavorites] = useState(initialFavorites);
   const [editingSlot, setEditingSlot] = useState(null);
   const [playing, setPlaying] = useState(null); // { videoId, title }
+
+  // La page parente charge le profil puis les favoris en deux temps :
+  // ce composant peut donc monter avant que les favoris soient arrivés.
+  // On resynchronise dès que la vraie valeur arrive.
+  useEffect(() => {
+    setFavorites(initialFavorites);
+  }, [initialFavorites]);
 
   const slots = [1, 2, 3, 4, 5].map(
     (position) => favorites.find((f) => f.position === position) || null
