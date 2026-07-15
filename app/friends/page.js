@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
+import FriendCard from "@/components/FriendCard";
 
 export default async function FriendsPage() {
   const supabase = createClient();
@@ -19,6 +20,11 @@ export default async function FriendsPage() {
     f.requester_id === user.id ? f.addressee : f.requester
   );
 
+  const friendIds = friends.map((f) => f.id);
+  const { data: allFavorites } = friendIds.length
+    ? await supabase.from("favorite_tracks").select("*").in("user_id", friendIds)
+    : { data: [] };
+
   return (
     <main className="min-h-screen flex flex-col items-center px-6 py-12">
       <div className="w-full max-w-xl">
@@ -32,33 +38,13 @@ export default async function FriendsPage() {
           </p>
         ) : (
           <div className="space-y-3">
-            {friends.map((friend) => {
-              const initial = (friend?.username || "?").trim().charAt(0).toUpperCase();
-              return (
-                <a
-                  key={friend.id}
-                  href={`/messages/${friend.id}`}
-                  className="flex items-center gap-4 bg-surface border border-line rounded-2xl p-4 hover:border-coral/40 transition"
-                >
-                  {friend.avatar_url ? (
-                    <img
-                      src={friend.avatar_url}
-                      alt=""
-                      className="w-12 h-12 rounded-full object-cover border border-line"
-                    />
-                  ) : (
-                    <div className="w-12 h-12 rounded-full bg-surface2 border border-line flex items-center justify-center font-display italic text-lg">
-                      {initial}
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium truncate">{friend.username}</p>
-                    {friend.city && <p className="text-xs text-muted truncate">{friend.city}</p>}
-                  </div>
-                  <span className="text-xs text-periwinkle shrink-0">Discuter →</span>
-                </a>
-              );
-            })}
+            {friends.map((friend) => (
+              <FriendCard
+                key={friend.id}
+                friend={friend}
+                favorites={(allFavorites || []).filter((f) => f.user_id === friend.id)}
+              />
+            ))}
           </div>
         )}
       </div>

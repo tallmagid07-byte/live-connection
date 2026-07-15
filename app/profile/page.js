@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
+import FavoritesList from "@/components/FavoritesList";
 
 export default function ProfilePage() {
   const supabase = createClient();
@@ -13,6 +14,7 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
     async function load() {
@@ -31,6 +33,12 @@ export default function ProfilePage() {
       setProfile(data);
       setUsername(data?.username || "");
       setCity(data?.city || "");
+
+      const { data: favData } = await supabase
+        .from("favorite_tracks")
+        .select("*")
+        .eq("user_id", user.id);
+      setFavorites(favData || []);
     }
     load();
   }, [supabase, router]);
@@ -132,6 +140,11 @@ export default function ProfilePage() {
         <p className="text-xs text-muted mt-2">
           Nous n'utilisons jamais votre position GPS précise — seulement le nom que vous indiquez ici.
         </p>
+
+        <p className="text-xs uppercase tracking-widest text-muted mt-10 mb-4">
+          Mes 5 chansons préférées
+        </p>
+        <FavoritesList userId={profile.id} initialFavorites={favorites} editable={true} />
 
         <button
           onClick={handleSave}
