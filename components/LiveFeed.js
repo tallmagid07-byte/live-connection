@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import NowPlayingCard from "./NowPlayingCard";
+import MusicSearch from "./MusicSearch";
+import YouTubePlayer from "./YouTubePlayer";
 
 export default function LiveFeed({ initialEntries, initialFriendships, currentUserId }) {
   const [entries, setEntries] = useState(initialEntries);
   const [friendships, setFriendships] = useState(initialFriendships);
-  const [trackName, setTrackName] = useState("");
-  const [artistName, setArtistName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [joined, setJoined] = useState(null); // { videoId, title, startedAt }
   const supabase = createClient();
 
   const mine = entries.find((e) => e.user_id === currentUserId);
@@ -30,7 +31,6 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
     if (data) setFriendships(data);
   }
 
-  // Abonnement temps réel : feed de musique + amitiés
   useEffect(() => {
     const channel = supabase
       .channel("listen_realtime")
@@ -44,18 +44,17 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
-  async function handleShare(e) {
-    e.preventDefault();
-    if (!trackName.trim() || !artistName.trim()) return;
+  async function handleSelectTrack(item) {
     setSaving(true);
+    const now = new Date().toISOString();
     await supabase.from("now_playing").upsert({
       user_id: currentUserId,
-      track_name: trackName.trim(),
-      artist_name: artistName.trim(),
-      updated_at: new Date().toISOString(),
+      track_name: item.title,
+      artist_name: item.channel,
+      video_id: item.videoId,
+      thumbnail_url: item.thumbnail,
+      updated_at: now,
     });
-    setTrackName("");
-    setArtistName("");
     setSaving(false);
   }
 
@@ -75,6 +74,14 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
   async function handleAccept(friendshipId) {
     await supabase.from("friendships").update({ status: "accepted" }).eq("id", friendshipId);
     refreshFriendships();
+  }
+
+  function handleJoin(entry) {
+    setJoined({
+      videoId: entry.video_id,
+      title: entry.track_name,
+      startedAt: entry.updated_at,
+    });
   }
 
   // Calcule le statut d'amitié vis-à-vis de chaque autre utilisateur
@@ -102,8 +109,29 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
     return acc;
   }, {});
 
+  const joinedStartSeconds = joined
+    ? (Date.now() - new Date(joined.startedAt).getTime()) / 1000
+    : 0;
+
   return (
     <div className="w-full max-w-xl space-y-10">
+      {/* Lecteur : soit ma propre écoute, soit celle rejointe */}
+      {(mine?.video_id || joined) && (
+        <YouTubePlayer
+          videoId={joined ? joined.videoId : mine.video_id}
+          startSeconds={joined ? joinedStartSeconds : 0}
+          title={joined ? joined.title : mine.track_name}
+        />
+      )}
+      {joined && (
+        <button
+          onClick={() => setJoined(null)}
+          className="text-xs text-muted hover:text-ink transition -mt-6"
+        >
+          ✕ Quitter cette écoute partagée
+        </button>
+      )}
+
       {/* Demandes d'amis reçues */}
       {pendingReceived.length > 0 && (
         <div className="bg-surface2 border border-periwinkle/40 rounded-2xl p-5">
@@ -124,10 +152,10 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
         </div>
       )}
 
-      {/* Partager ce qu'on écoute */}
+      {/* Chercher et partager une musique */}
       <div className="bg-surface border border-line rounded-2xl p-5">
         <p className="text-xs uppercase tracking-widest text-muted mb-4">
-          {mine ? "Vous écoutez en ce moment" : "Partager ce que vous écoutez"}
+          {mine ? "Vous écoutez en ce moment" : "Chercher et partager une chanson"}
         </p>
 
         {mine && (
@@ -142,27 +170,8 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
           </div>
         )}
 
-        <form onSubmit={handleShare} className="flex flex-col gap-3 sm:flex-row">
-          <input
-            value={trackName}
-            onChange={(e) => setTrackName(e.target.value)}
-            placeholder="Titre de la chanson"
-            className="flex-1 bg-surface2 border border-line rounded-xl px-4 py-3 text-sm text-ink placeholder:text-muted/60 focus:outline-none focus:border-coral/60"
-          />
-          <input
-            value={artistName}
-            onChange={(e) => setArtistName(e.target.value)}
-            placeholder="Artiste"
-            className="flex-1 bg-surface2 border border-line rounded-xl px-4 py-3 text-sm text-ink placeholder:text-muted/60 focus:outline-none focus:border-coral/60"
-          />
-          <button
-            type="submit"
-            disabled={saving}
-            className="bg-coral text-night font-medium px-5 py-3 rounded-xl hover:brightness-110 transition disabled:opacity-60 whitespace-nowrap"
-          >
-            {saving ? "…" : mine ? "Mettre à jour" : "Partager"}
-          </button>
-        </form>
+        <MusicSearch onSelect={handleSelectTrack} />
+        {saving && <p className="text-xs text-muted mt-2">Partage en cours…</p>}
       </div>
 
       {/* Feed des autres */}
@@ -187,6 +196,7 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
                       track={entry}
                       friendStatus={friendMap[entry.user_id]}
                       onAddFriend={() => handleAddFriend(entry.user_id)}
+                      onJoin={() => handleJoin(entry)}
                       onAccept={() => {
                         const f = friendships.find(
                           (fr) => fr.requester_id === entry.user_id && fr.addressee_id === currentUserId

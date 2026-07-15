@@ -1,4 +1,4 @@
-export default function NowPlayingCard({ profile, track, friendStatus, onAddFriend, onAccept, showFriendAction = true }) {
+export default function NowPlayingCard({ profile, track, friendStatus, onAddFriend, onAccept, onJoin, showFriendAction = true }) {
   const initial = (profile?.username || "?").trim().charAt(0).toUpperCase();
 
   return (
@@ -18,6 +18,10 @@ export default function NowPlayingCard({ profile, track, friendStatus, onAddFrie
         )}
       </div>
 
+      {track.thumbnail_url && (
+        <img src={track.thumbnail_url} alt="" className="w-12 h-12 rounded-lg object-cover border border-line shrink-0" />
+      )}
+
       <div className="min-w-0 flex-1">
         <p className="font-medium truncate">{profile?.username || "Quelqu'un"}</p>
         {profile?.city && (
@@ -33,37 +37,48 @@ export default function NowPlayingCard({ profile, track, friendStatus, onAddFrie
         <p className="text-xs text-muted truncate">{track.artist_name}</p>
       </div>
 
-      {showFriendAction && (
-        <div className="shrink-0">
-          {friendStatus === "accepted" && (
-            <a
-              href={`/messages/${profile?.id}`}
-              className="text-xs bg-periwinkle text-night font-medium px-3 py-2 rounded-full hover:brightness-110 transition whitespace-nowrap"
-            >
-              Message
-            </a>
-          )}
-          {friendStatus === "pending_sent" && (
-            <span className="text-xs text-muted whitespace-nowrap">Demande envoyée</span>
-          )}
-          {friendStatus === "pending_received" && (
-            <button
-              onClick={onAccept}
-              className="text-xs bg-periwinkle text-night font-medium px-3 py-2 rounded-full hover:brightness-110 transition whitespace-nowrap"
-            >
-              Accepter
-            </button>
-          )}
-          {!friendStatus && (
-            <button
-              onClick={onAddFriend}
-              className="text-xs bg-surface2 border border-line px-3 py-2 rounded-full hover:border-coral/60 transition whitespace-nowrap"
-            >
-              + Ami
-            </button>
-          )}
-        </div>
-      )}
+      <div className="shrink-0 flex flex-col items-end gap-2">
+        {track.video_id && onJoin && (
+          <button
+            onClick={onJoin}
+            className="text-xs bg-coral text-night font-medium px-3 py-2 rounded-full hover:brightness-110 transition whitespace-nowrap"
+          >
+            ▶ Rejoindre
+          </button>
+        )}
+
+        {showFriendAction && (
+          <>
+            {friendStatus === "accepted" && (
+              <a
+                href={`/messages/${profile?.id}`}
+                className="text-xs bg-periwinkle text-night font-medium px-3 py-2 rounded-full hover:brightness-110 transition whitespace-nowrap"
+              >
+                Message
+              </a>
+            )}
+            {friendStatus === "pending_sent" && (
+              <span className="text-xs text-muted whitespace-nowrap">Demande envoyée</span>
+            )}
+            {friendStatus === "pending_received" && (
+              <button
+                onClick={onAccept}
+                className="text-xs bg-periwinkle text-night font-medium px-3 py-2 rounded-full hover:brightness-110 transition whitespace-nowrap"
+              >
+                Accepter
+              </button>
+            )}
+            {!friendStatus && (
+              <button
+                onClick={onAddFriend}
+                className="text-xs bg-surface2 border border-line px-3 py-2 rounded-full hover:border-coral/60 transition whitespace-nowrap"
+              >
+                + Ami
+              </button>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
