@@ -1,0 +1,12 @@
+<svg width="220" height="240" viewBox="0 0 220 240" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(110,88)">
+    <circle r="70" fill="none" stroke="#FF6B5B" stroke-width="1.5" opacity="0.35"/>
+    <circle r="50" fill="none" stroke="#FF6B5B" stroke-width="2.5" opacity="0.6"/>
+    <circle r="30" fill="none" stroke="#FF6B5B" stroke-width="3.5" opacity="0.85"/>
+    <circle r="9" fill="#FF6B5B"/>
+  </g>
+
+  <text x="110" y="212" text-anchor="middle" font-family="Georgia, serif" font-weight="700" font-size="46" fill="#EDEAF6">
+    Listen
+  </text>
+</svg>
