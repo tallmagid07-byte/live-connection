@@ -9,6 +9,7 @@ import YouTubePlayer from "./YouTubePlayer";
 export default function LiveFeed({ initialEntries, initialFriendships, currentUserId }) {
   const [entries, setEntries] = useState(initialEntries);
   const [friendships, setFriendships] = useState(initialFriendships);
+  const [reactions, setReactions] = useState([]);
   const [saving, setSaving] = useState(false);
   const [joined, setJoined] = useState(null); // { videoId, title, startedAt }
   const supabase = createClient();
@@ -31,11 +32,21 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
     if (data) setFriendships(data);
   }
 
+  async function refreshReactions() {
+    const { data } = await supabase
+      .from("reactions")
+      .select("*")
+      .or(`from_user_id.eq.${currentUserId},to_user_id.eq.${currentUserId}`);
+    if (data) setReactions(data);
+  }
+
   useEffect(() => {
+    refreshReactions();
     const channel = supabase
       .channel("listen_realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "now_playing" }, refreshEntries)
       .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, refreshFriendships)
+      .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, refreshReactions)
       .subscribe();
 
     return () => {
@@ -84,6 +95,23 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
     });
   }
 
+  async function handleReact(toUserId, emoji) {
+    const existing = reactions.find(
+      (r) => r.from_user_id === currentUserId && r.to_user_id === toUserId
+    );
+
+    if (existing && existing.emoji === emoji) {
+      // Retaper sur la même réaction la retire
+      await supabase.from("reactions").delete().eq("id", existing.id);
+    } else {
+      await supabase.from("reactions").upsert(
+        { from_user_id: currentUserId, to_user_id: toUserId, emoji },
+        { onConflict: "from_user_id,to_user_id" }
+      );
+    }
+    refreshReactions();
+  }
+
   // Calcule le statut d'amitié vis-à-vis de chaque autre utilisateur
   const friendMap = {};
   const pendingReceived = [];
@@ -112,6 +140,8 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
   const joinedStartSeconds = joined
     ? (Date.now() - new Date(joined.startedAt).getTime()) / 1000
     : 0;
+
+  const myReceivedReactions = reactions.filter((r) => r.to_user_id === currentUserId);
 
   return (
     <div className="w-full max-w-xl space-y-10">
@@ -160,7 +190,12 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
 
         {mine && (
           <div className="mb-4">
-            <NowPlayingCard profile={mine.profiles} track={mine} showFriendAction={false} />
+            <NowPlayingCard
+              profile={mine.profiles}
+              track={mine}
+              showFriendAction={false}
+              receivedReactions={myReceivedReactions}
+            />
             <button
               onClick={handleStop}
               className="mt-3 text-xs text-muted hover:text-ink transition"
@@ -189,22 +224,30 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
               <div key={city}>
                 <p className="text-xs uppercase tracking-widest text-muted mb-3">{city}</p>
                 <div className="space-y-3">
-                  {group.map((entry) => (
-                    <NowPlayingCard
-                      key={entry.user_id}
-                      profile={entry.profiles}
-                      track={entry}
-                      friendStatus={friendMap[entry.user_id]}
-                      onAddFriend={() => handleAddFriend(entry.user_id)}
-                      onJoin={() => handleJoin(entry)}
-                      onAccept={() => {
-                        const f = friendships.find(
-                          (fr) => fr.requester_id === entry.user_id && fr.addressee_id === currentUserId
-                        );
-                        if (f) handleAccept(f.id);
-                      }}
-                    />
-                  ))}
+                  {group.map((entry) => {
+                    const myReaction = reactions.find(
+                      (r) => r.from_user_id === currentUserId && r.to_user_id === entry.user_id
+                    );
+                    return (
+                      <NowPlayingCard
+                        key={entry.user_id}
+                        profile={entry.profiles}
+                        track={entry}
+                        friendStatus={friendMap[entry.user_id]}
+                        onAddFriend={() => handleAddFriend(entry.user_id)}
+                        onJoin={() => handleJoin(entry)}
+                        onAccept={() => {
+                          const f = friendships.find(
+                            (fr) => fr.requester_id === entry.user_id && fr.addressee_id === currentUserId
+                          );
+                          if (f) handleAccept(f.id);
+                        }}
+                        showReactions={true}
+                        myReaction={myReaction?.emoji}
+                        onReact={(emoji) => handleReact(entry.user_id, emoji)}
+                      />
+                    );
+                  })}
                 </div>
               </div>
             ))}
