@@ -54,9 +54,30 @@ export default function ProfilePage() {
     if (!file) return;
 
     setUploadError("");
+
+    const allowedTypes = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError("Format non supporté. Utilisez une image JPG, PNG, WEBP ou GIF.");
+      e.target.value = "";
+      return;
+    }
+
+    const maxSizeBytes = 5 * 1024 * 1024; // 5 Mo
+    if (file.size > maxSizeBytes) {
+      setUploadError("L'image est trop lourde (5 Mo maximum).");
+      e.target.value = "";
+      return;
+    }
+
     setUploading(true);
 
-    const extension = file.name.split(".").pop();
+    const extensionByType = {
+      "image/jpeg": "jpg",
+      "image/png": "png",
+      "image/webp": "webp",
+      "image/gif": "gif",
+    };
+    const extension = extensionByType[file.type];
     const path = `${profile.id}/avatar.${extension}`;
 
     const { error: uploadErr } = await supabase.storage

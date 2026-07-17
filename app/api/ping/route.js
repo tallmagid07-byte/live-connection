@@ -4,7 +4,14 @@ import { NextResponse } from "next/server";
 // Appelée régulièrement par un service externe (UptimeRobot) pour que
 // Supabase reçoive une vraie requête base de données et ne mette jamais
 // le projet en pause pour inactivité (règle : pause après 7 jours sans requête).
-export async function GET() {
+// Protégée par un secret pour éviter que n'importe qui la déclenche.
+export async function GET(request) {
+  const secret = request.nextUrl.searchParams.get("secret");
+
+  if (secret !== process.env.PING_SECRET) {
+    return NextResponse.json({ ok: false, error: "unauthorized" }, { status: 401 });
+  }
+
   const supabase = createAdminClient();
 
   const { error } = await supabase.from("profiles").select("id").limit(1);
