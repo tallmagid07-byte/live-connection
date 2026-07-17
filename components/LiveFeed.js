@@ -1,20 +1,31 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
 import NowPlayingCard from "./NowPlayingCard";
 import MusicSearch from "./MusicSearch";
 import YouTubePlayer from "./YouTubePlayer";
 
-export default function LiveFeed({ initialEntries, initialFriendships, currentUserId }) {
+export default function LiveFeed({ initialEntries, initialFriendships, currentUserId, currentUserProfile }) {
   const [entries, setEntries] = useState(initialEntries);
   const [friendships, setFriendships] = useState(initialFriendships);
   const [reactions, setReactions] = useState([]);
   const [saving, setSaving] = useState(false);
-  const [joined, setJoined] = useState(null); // { videoId, title, startedAt }
+  const [joined, setJoined] = useState(null); // { hostId, videoId, title, startedAt }
+  const [listenerCount, setListenerCount] = useState(0);
+  const [toasts, setToasts] = useState([]);
   const supabase = createClient();
+  const toastIdRef = useRef(0);
 
   const mine = entries.find((e) => e.user_id === currentUserId);
+
+  function pushToast(text) {
+    const id = ++toastIdRef.current;
+    setToasts((prev) => [...prev, { id, text }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 4000);
+  }
 
   async function refreshEntries() {
     const { data } = await supabase
@@ -55,6 +66,59 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
 
+  // Présence en direct : quand JE partage une chanson, on écoute qui vient l'écouter avec moi.
+  useEffect(() => {
+    if (!mine?.video_id) {
+      setListenerCount(0);
+      return;
+    }
+
+    const channel = supabase.channel(`listening:${currentUserId}`, {
+      config: { presence: { key: currentUserId } },
+    });
+
+    channel
+      .on("presence", { event: "sync" }, () => {
+        const state = channel.presenceState();
+        const count = Object.values(state).reduce((sum, arr) => sum + arr.length, 0);
+        setListenerCount(count);
+      })
+      .on("presence", { event: "join" }, ({ newPresences }) => {
+        newPresences.forEach((p) => {
+          pushToast(`🎧 ${p.username || "Quelqu'un"} a rejoint votre écoute`);
+        });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mine?.video_id, currentUserId, supabase]);
+
+  // Quand JE rejoins l'écoute de quelqu'un, on signale ma présence sur son canal.
+  useEffect(() => {
+    if (!joined) return;
+
+    const channel = supabase.channel(`listening:${joined.hostId}`, {
+      config: { presence: { key: currentUserId } },
+    });
+
+    channel.subscribe(async (status) => {
+      if (status === "SUBSCRIBED") {
+        await channel.track({
+          user_id: currentUserId,
+          username: currentUserProfile?.username || "Quelqu'un",
+        });
+      }
+    });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [joined?.hostId, currentUserId, supabase]);
+
   async function handleSelectTrack(item) {
     setSaving(true);
     const now = new Date().toISOString();
@@ -89,6 +153,7 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
 
   function handleJoin(entry) {
     setJoined({
+      hostId: entry.user_id,
       videoId: entry.video_id,
       title: entry.track_name,
       startedAt: entry.updated_at,
@@ -142,7 +207,21 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
   const myReceivedReactions = reactions.filter((r) => r.to_user_id === currentUserId);
 
   return (
-    <div className="w-full max-w-xl space-y-14">
+    <div className="w-full max-w-xl space-y-14 relative">
+      {/* Notifications discrètes : quelqu'un a rejoint votre écoute */}
+      {toasts.length > 0 && (
+        <div className="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 pointer-events-none">
+          {toasts.map((t) => (
+            <div
+              key={t.id}
+              className="animate-fadeUp bg-surface2/95 backdrop-blur border border-coral/40 text-ink text-sm px-4 py-2.5 rounded-full shadow-card"
+            >
+              {t.text}
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Lecteur : soit ma propre écoute, soit celle rejointe */}
       {(mine?.video_id || joined) && (
         <div className="animate-fadeUp">
@@ -198,9 +277,17 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
         )}
 
         <div className="relative bg-surface/90 backdrop-blur border border-line rounded-3xl p-6 shadow-card">
-          <p className="text-[11px] uppercase tracking-[0.18em] text-coral/90 font-medium mb-5">
-            {mine ? "Vous écoutez en ce moment" : "Chercher et partager une chanson"}
-          </p>
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-coral/90 font-medium">
+              {mine ? "Vous écoutez en ce moment" : "Chercher et partager une chanson"}
+            </p>
+            {mine?.video_id && listenerCount > 0 && (
+              <span className="flex items-center gap-1.5 text-xs text-periwinkle bg-periwinkle/10 border border-periwinkle/30 px-2.5 py-1 rounded-full">
+                <span className="w-1.5 h-1.5 rounded-full bg-periwinkle animate-pulse" />
+                🎧 {listenerCount} {listenerCount === 1 ? "personne écoute" : "personnes écoutent"}
+              </span>
+            )}
+          </div>
 
           {mine && (
             <div className="mb-5">

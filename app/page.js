@@ -21,6 +21,12 @@ export default async function HomePage() {
     .select("*, requester:profiles!friendships_requester_id_fkey(*), addressee:profiles!friendships_addressee_id_fkey(*)")
     .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`);
 
+  const { data: currentUserProfile } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("id", user.id)
+    .single();
+
   return (
     <main className="min-h-screen flex flex-col items-center px-6 py-14">
       <header className="w-full max-w-xl flex items-center justify-between mb-14">
@@ -46,6 +52,7 @@ export default async function HomePage() {
         initialEntries={entries || []}
         initialFriendships={friendships || []}
         currentUserId={user.id}
+        currentUserProfile={currentUserProfile}
       />
     </main>
   );
