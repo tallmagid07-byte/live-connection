@@ -101,7 +101,6 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
     );
 
     if (existing && existing.emoji === emoji) {
-      // Retaper sur la même réaction la retire
       await supabase.from("reactions").delete().eq("id", existing.id);
     } else {
       await supabase.from("reactions").upsert(
@@ -112,7 +111,6 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
     refreshReactions();
   }
 
-  // Calcule le statut d'amitié vis-à-vis de chaque autre utilisateur
   const friendMap = {};
   const pendingReceived = [];
   friendships.forEach((f) => {
@@ -144,35 +142,40 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
   const myReceivedReactions = reactions.filter((r) => r.to_user_id === currentUserId);
 
   return (
-    <div className="w-full max-w-xl space-y-10">
+    <div className="w-full max-w-xl space-y-14">
       {/* Lecteur : soit ma propre écoute, soit celle rejointe */}
       {(mine?.video_id || joined) && (
-        <YouTubePlayer
-          videoId={joined ? joined.videoId : mine.video_id}
-          startSeconds={joined ? joinedStartSeconds : 0}
-          title={joined ? joined.title : mine.track_name}
-        />
-      )}
-      {joined && (
-        <button
-          onClick={() => setJoined(null)}
-          className="text-xs text-muted hover:text-ink transition -mt-6"
-        >
-          ✕ Quitter cette écoute partagée
-        </button>
+        <div className="animate-fadeUp">
+          <YouTubePlayer
+            videoId={joined ? joined.videoId : mine.video_id}
+            startSeconds={joined ? joinedStartSeconds : 0}
+            title={joined ? joined.title : mine.track_name}
+          />
+          {joined && (
+            <button
+              onClick={() => setJoined(null)}
+              className="text-xs text-muted hover:text-ink transition mt-3"
+            >
+              ✕ Quitter cette écoute partagée
+            </button>
+          )}
+        </div>
       )}
 
       {/* Demandes d'amis reçues */}
       {pendingReceived.length > 0 && (
-        <div className="bg-surface2 border border-periwinkle/40 rounded-2xl p-5">
-          <p className="text-xs uppercase tracking-widest text-muted mb-4">Demandes d'amis</p>
-          <div className="space-y-3">
+        <div className="relative overflow-hidden bg-surface2/80 backdrop-blur border border-periwinkle/30 rounded-2xl p-5 shadow-card animate-fadeUp">
+          <div className="absolute -top-16 -right-16 w-40 h-40 rounded-full bg-periwinkle/20 blur-3xl pointer-events-none" />
+          <p className="relative text-[11px] uppercase tracking-[0.18em] text-periwinkle/90 font-medium mb-4">
+            Demandes d'amis
+          </p>
+          <div className="relative space-y-3">
             {pendingReceived.map((f) => (
               <div key={f.id} className="flex items-center justify-between gap-3">
                 <p className="text-sm">{f.requester?.username || "Quelqu'un"}</p>
                 <button
                   onClick={() => handleAccept(f.id)}
-                  className="text-xs bg-periwinkle text-night font-medium px-3 py-2 rounded-full hover:brightness-110 transition"
+                  className="text-xs bg-periwinkle text-night font-semibold px-3.5 py-2 rounded-full hover:brightness-110 active:scale-95 transition"
                 >
                   Accepter
                 </button>
@@ -182,47 +185,79 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
         </div>
       )}
 
-      {/* Chercher et partager une musique */}
-      <div className="bg-surface border border-line rounded-2xl p-5">
-        <p className="text-xs uppercase tracking-widest text-muted mb-4">
-          {mine ? "Vous écoutez en ce moment" : "Chercher et partager une chanson"}
-        </p>
-
-        {mine && (
-          <div className="mb-4">
-            <NowPlayingCard
-              profile={mine.profiles}
-              track={mine}
-              showFriendAction={false}
-              receivedReactions={myReceivedReactions}
-            />
-            <button
-              onClick={handleStop}
-              className="mt-3 text-xs text-muted hover:text-ink transition"
-            >
-              J'ai arrêté d'écouter
-            </button>
-          </div>
+      {/* Hero : ce que j'écoute / recherche */}
+      <div className="relative">
+        {mine?.thumbnail_url && (
+          <div
+            className="absolute -inset-x-6 -top-10 h-56 rounded-full blur-[70px] opacity-30 animate-driftGlow pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(closest-side, #FF6B5B, #6C8CFF 70%, transparent)",
+            }}
+          />
         )}
 
-        <MusicSearch onSelect={handleSelectTrack} />
-        {saving && <p className="text-xs text-muted mt-2">Partage en cours…</p>}
+        <div className="relative bg-surface/90 backdrop-blur border border-line rounded-3xl p-6 shadow-card">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-coral/90 font-medium mb-5">
+            {mine ? "Vous écoutez en ce moment" : "Chercher et partager une chanson"}
+          </p>
+
+          {mine && (
+            <div className="mb-5">
+              <NowPlayingCard
+                profile={mine.profiles}
+                track={mine}
+                showFriendAction={false}
+                receivedReactions={myReceivedReactions}
+                elevated
+              />
+              <button
+                onClick={handleStop}
+                className="mt-3 text-xs text-muted hover:text-ink transition"
+              >
+                J'ai arrêté d'écouter
+              </button>
+            </div>
+          )}
+
+          <MusicSearch onSelect={handleSelectTrack} />
+          {saving && (
+            <p className="text-xs text-muted mt-3 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-coral animate-pulse" />
+              Partage en cours…
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Feed des autres */}
       <div>
-        <p className="text-xs uppercase tracking-widest text-muted mb-4">En ce moment, autour de vous</p>
+        <div className="flex items-center gap-3 mb-6">
+          <p className="text-[11px] uppercase tracking-[0.18em] text-muted font-medium whitespace-nowrap">
+            En ce moment, autour de vous
+          </p>
+          <span className="h-px flex-1 bg-gradient-to-r from-line to-transparent" />
+        </div>
 
         {others.length === 0 ? (
-          <div className="text-center text-muted mt-10 max-w-sm mx-auto">
-            <p className="font-display italic text-xl text-ink mb-2">Silence pour l'instant.</p>
-            <p>Personne d'autre ne partage de musique là, tout de suite.</p>
+          <div className="text-center mt-14 max-w-sm mx-auto">
+            <div className="w-14 h-14 mx-auto mb-5 rounded-full border border-line flex items-center justify-center">
+              <span className="w-2 h-2 rounded-full bg-coral/70" />
+            </div>
+            <p className="font-display italic text-2xl text-ink mb-2">Silence pour l'instant.</p>
+            <p className="text-sm text-muted">Personne d'autre ne partage de musique là, tout de suite.</p>
           </div>
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-10">
             {Object.entries(grouped).map(([city, group]) => (
               <div key={city}>
-                <p className="text-xs uppercase tracking-widest text-muted mb-3">{city}</p>
+                <div className="flex items-center gap-2 mb-4">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="text-muted shrink-0">
+                    <path d="M12 22s7-7.16 7-12a7 7 0 10-14 0c0 4.84 7 12 7 12z" stroke="currentColor" strokeWidth="2"/>
+                    <circle cx="12" cy="10" r="2.5" stroke="currentColor" strokeWidth="2"/>
+                  </svg>
+                  <p className="text-[11px] uppercase tracking-[0.18em] text-muted font-medium">{city}</p>
+                </div>
                 <div className="space-y-3">
                   {group.map((entry) => {
                     const myReaction = reactions.find(

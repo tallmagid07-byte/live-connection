@@ -26,9 +26,24 @@ module.exports = {
           "70%": { transform: "scale(1.6)", opacity: "0" },
           "100%": { transform: "scale(1.6)", opacity: "0" },
         },
+        driftGlow: {
+          "0%, 100%": { transform: "translate(0, 0) scale(1)" },
+          "50%": { transform: "translate(2%, -3%) scale(1.08)" },
+        },
+        fadeUp: {
+          "0%": { opacity: "0", transform: "translateY(6px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
       },
       animation: {
         pulseRing: "pulseRing 2.2s cubic-bezier(0.2,0.6,0.4,1) infinite",
+        driftGlow: "driftGlow 14s ease-in-out infinite",
+        fadeUp: "fadeUp 0.35s cubic-bezier(0.2,0.6,0.4,1) both",
+      },
+      boxShadow: {
+        card: "0 1px 2px rgba(0,0,0,0.3), 0 12px 32px -16px rgba(0,0,0,0.55)",
+        cardHover: "0 1px 2px rgba(0,0,0,0.35), 0 20px 48px -18px rgba(255,107,91,0.18)",
+        glow: "0 0 120px 40px rgba(255,107,91,0.12)",
       },
     },
   },
