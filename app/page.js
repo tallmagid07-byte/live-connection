@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
 import LiveFeed from "@/components/LiveFeed";
+import LogoutButton from "@/components/LogoutButton";
 
 export default async function HomePage() {
   const supabase = createClient();
@@ -37,6 +38,7 @@ export default async function HomePage() {
           >
             Mon profil
           </a>
+          <LogoutButton className="text-muted hover:text-coral p-2 rounded-full hover:bg-surface2 transition-colors" />
         </nav>
       </header>
 

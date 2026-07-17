@@ -155,7 +155,7 @@ export default function ProfilePage() {
 
         <button
           onClick={handleLogout}
-          className="mt-4 w-full text-sm text-muted hover:text-ink transition"
+          className="mt-4 w-full text-sm text-coral/90 hover:text-coral border border-coral/30 hover:border-coral/60 rounded-full py-3 transition"
         >
           Se déconnecter
         </button>
