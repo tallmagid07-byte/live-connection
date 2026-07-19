@@ -11,9 +11,11 @@ export default async function HomePage() {
 
   if (!user) redirect("/login");
 
+  const cutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
   const { data: entries } = await supabase
     .from("now_playing")
     .select("*, profiles(*)")
+    .gte("updated_at", cutoff)
     .order("updated_at", { ascending: false });
 
   const { data: friendships } = await supabase

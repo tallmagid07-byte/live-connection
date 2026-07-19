@@ -28,9 +28,11 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
   }
 
   async function refreshEntries() {
+    const cutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
     const { data } = await supabase
       .from("now_playing")
       .select("*, profiles(*)")
+      .gte("updated_at", cutoff)
       .order("updated_at", { ascending: false });
     if (data) setEntries(data);
   }
@@ -60,8 +62,14 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
       .on("postgres_changes", { event: "*", schema: "public", table: "reactions" }, refreshReactions)
       .subscribe();
 
+    // Purge régulièrement les écoutes devenues trop anciennes (onglet fermé
+    // ailleurs, appareil éteint...), même si personne d'autre ne déclenche
+    // de mise à jour entre-temps.
+    const staleCheckInterval = setInterval(refreshEntries, 60 * 1000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(staleCheckInterval);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [supabase]);
@@ -118,6 +126,25 @@ export default function LiveFeed({ initialEntries, initialFriendships, currentUs
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [joined?.hostId, currentUserId, supabase]);
+
+  // Tant que je partage une chanson et que cet onglet reste ouvert, on
+  // "rafraîchit" discrètement l'horodatage toutes les 2 minutes. Si l'onglet
+  // se ferme (ou l'appareil s'éteint), ces rafraîchissements s'arrêtent et
+  // mon écoute disparaît automatiquement du feed des autres après un délai.
+  useEffect(() => {
+    if (!mine) return;
+
+    const interval = setInterval(() => {
+      supabase
+        .from("now_playing")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("user_id", currentUserId)
+        .then(() => {});
+    }, 2 * 60 * 1000);
+
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mine?.user_id, currentUserId, supabase]);
 
   async function handleSelectTrack(item) {
     setSaving(true);
