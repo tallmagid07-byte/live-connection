@@ -100,6 +100,7 @@ export default function ProfilePage() {
   }
 
   async function handleLogout() {
+    await supabase.from("now_playing").delete().eq("user_id", profile.id);
     await supabase.auth.signOut();
     router.push("/login");
   }

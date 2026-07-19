@@ -8,6 +8,14 @@ export default function LogoutButton({ className }) {
   const router = useRouter();
 
   async function handleLogout() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      await supabase.from("now_playing").delete().eq("user_id", user.id);
+    }
+
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
