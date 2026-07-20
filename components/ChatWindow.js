@@ -14,6 +14,18 @@ export default function ChatWindow({ currentUserId, friendProfile, initialMessag
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Dès qu'on ouvre la conversation, on marque comme lus tous les messages
+  // reçus de cet ami qui ne l'étaient pas encore.
+  useEffect(() => {
+    supabase
+      .from("messages")
+      .update({ read: true })
+      .eq("sender_id", friendProfile.id)
+      .eq("recipient_id", currentUserId)
+      .eq("read", false)
+      .then(() => {});
+  }, [supabase, currentUserId, friendProfile.id]);
+
   useEffect(() => {
     const channel = supabase
       .channel(`chat_${[currentUserId, friendProfile.id].sort().join("_")}`)
@@ -27,6 +39,10 @@ export default function ChatWindow({ currentUserId, friendProfile, initialMessag
             (m.sender_id === friendProfile.id && m.recipient_id === currentUserId);
           if (isRelevant) {
             setMessages((prev) => (prev.some((p) => p.id === m.id) ? prev : [...prev, m]));
+            // La conversation est ouverte : on marque immédiatement comme lu.
+            if (m.sender_id === friendProfile.id) {
+              supabase.from("messages").update({ read: true }).eq("id", m.id).then(() => {});
+            }
           }
         }
       )

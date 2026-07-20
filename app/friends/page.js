@@ -25,6 +25,20 @@ export default async function FriendsPage() {
     ? await supabase.from("favorite_tracks").select("*").in("user_id", friendIds)
     : { data: [] };
 
+  const { data: unreadMessages } = friendIds.length
+    ? await supabase
+        .from("messages")
+        .select("sender_id")
+        .eq("recipient_id", user.id)
+        .eq("read", false)
+        .in("sender_id", friendIds)
+    : { data: [] };
+
+  const unreadCountByFriend = (unreadMessages || []).reduce((acc, m) => {
+    acc[m.sender_id] = (acc[m.sender_id] || 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <main className="min-h-screen flex flex-col items-center px-6 py-12">
       <div className="w-full max-w-xl">
@@ -43,6 +57,7 @@ export default async function FriendsPage() {
                 key={friend.id}
                 friend={friend}
                 favorites={(allFavorites || []).filter((f) => f.user_id === friend.id)}
+                unreadCount={unreadCountByFriend[friend.id] || 0}
               />
             ))}
           </div>

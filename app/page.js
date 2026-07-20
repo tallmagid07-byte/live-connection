@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabaseServer";
 import { redirect } from "next/navigation";
 import LiveFeed from "@/components/LiveFeed";
 import LogoutButton from "@/components/LogoutButton";
+import UnreadBadge from "@/components/UnreadBadge";
 
 export default async function HomePage() {
   const supabase = createClient();
@@ -29,6 +30,12 @@ export default async function HomePage() {
     .eq("id", user.id)
     .single();
 
+  const { count: initialUnreadCount } = await supabase
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .eq("recipient_id", user.id)
+    .eq("read", false);
+
   return (
     <main className="min-h-screen flex flex-col items-center px-6 py-14">
       <header className="w-full max-w-xl flex items-center justify-between mb-14">
@@ -36,9 +43,10 @@ export default async function HomePage() {
         <nav className="flex items-center gap-2">
           <a
             href="/friends"
-            className="text-[15px] font-medium text-ink/90 hover:text-ink px-3.5 py-2 rounded-full hover:bg-surface2 transition-colors"
+            className="relative text-[15px] font-medium text-ink/90 hover:text-ink px-3.5 py-2 rounded-full hover:bg-surface2 transition-colors"
           >
             Mes amis
+            <UnreadBadge currentUserId={user.id} initialCount={initialUnreadCount || 0} />
           </a>
           <a
             href="/profile"
