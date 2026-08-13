@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
-import FavoritesList from "@/components/FavoritesList";
 
 export default function ProfilePage() {
   const supabase = createClient();
@@ -14,7 +13,6 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
-  const [favorites, setFavorites] = useState([]);
 
   useEffect(() => {
     async function load() {
@@ -33,12 +31,6 @@ export default function ProfilePage() {
       setProfile(data);
       setUsername(data?.username || "");
       setCity(data?.city || "");
-
-      const { data: favData } = await supabase
-        .from("favorite_tracks")
-        .select("*")
-        .eq("user_id", user.id);
-      setFavorites(favData || []);
     }
     load();
   }, [supabase, router]);
@@ -91,7 +83,6 @@ export default function ProfilePage() {
     }
 
     const { data: urlData } = supabase.storage.from("avatars").getPublicUrl(path);
-    // on ajoute un paramètre pour forcer le rafraîchissement du cache d'image
     const freshUrl = `${urlData.publicUrl}?t=${Date.now()}`;
 
     await supabase.from("profiles").update({ avatar_url: freshUrl }).eq("id", profile.id);
@@ -163,17 +154,19 @@ export default function ProfilePage() {
           Nous n'utilisons jamais votre position GPS précise — seulement le nom que vous indiquez ici.
         </p>
 
-        <p className="text-xs uppercase tracking-widest text-muted mt-10 mb-4">
-          Mes 5 chansons préférées
-        </p>
-        <FavoritesList userId={profile.id} initialFavorites={favorites} editable={true} />
-
         <button
           onClick={handleSave}
           className="mt-6 w-full bg-coral text-night font-medium py-3 rounded-full hover:brightness-110 transition"
         >
           {saved ? "Enregistré ✓" : "Enregistrer"}
         </button>
+
+        <a
+          href="/playlist"
+          className="mt-4 flex items-center justify-center gap-2 w-full text-sm text-periwinkle border border-periwinkle/30 hover:border-periwinkle/60 rounded-full py-3 transition"
+        >
+          🎵 Voir ma playlist
+        </a>
 
         <button
           onClick={handleLogout}

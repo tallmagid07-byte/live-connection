@@ -45,8 +45,14 @@ export default async function HomePage() {
             href="/friends"
             className="relative text-[15px] font-medium text-ink/90 hover:text-ink px-3.5 py-2 rounded-full hover:bg-surface2 transition-colors"
           >
-            Mes amis
+            Discussions
             <UnreadBadge currentUserId={user.id} initialCount={initialUnreadCount || 0} />
+          </a>
+          <a
+            href="/playlist"
+            className="text-[15px] font-medium text-ink/90 hover:text-ink px-3.5 py-2 rounded-full hover:bg-surface2 transition-colors"
+          >
+            Playlist
           </a>
           <a
             href="/profile"
